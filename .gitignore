@@ -4,3 +4,10 @@
 /crates/keelwire-tauri/gen
 /crates/keelwire-tauri/node_modules
 /build-ios.log
+
+# Signing keys never belong in the repo
+*.jks
+*.keystore
+*.p8
+*.p12
+/ui/tsconfig.tsbuildinfo

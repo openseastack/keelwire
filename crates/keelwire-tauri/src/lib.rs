@@ -1,4 +1,4 @@
-//! Keelwire app for desktop (Windows, macOS, Linux) and iPhone/iPad.
+//! Keelwire app for desktop (Windows, macOS, Linux), iPhone/iPad and Android.
 //!
 //! Starts the same engine + HTTP/WebSocket server as the headless daemon on
 //! 127.0.0.1 (random port) and shows it in a native web view, so every
@@ -26,7 +26,16 @@ fn engine_config() -> EngineConfig {
     let allow_tx = !(std::env::args().any(|a| a == "--read-only") || std::env::var("KEELWIRE_READ_ONLY").map(|v| v != "0").unwrap_or(false));
     #[allow(unused_mut)]
     let mut cfg = EngineConfig { allow_tx, ..Default::default() };
-    #[cfg(any(target_os = "ios", target_os = "android"))]
+    #[cfg(target_os = "android")]
+    {
+        // Android gives apps no HOME; use the app's private files folder
+        // (/data/data/<identifier>/files). Moving finished sessions to shared
+        // storage and a share sheet are the next Android steps.
+        let files = std::path::PathBuf::from("/data/data/org.keelwire.app/files");
+        cfg.data_dir = files.join("keelwire");
+        cfg.sessions_dir = files.join("Vessels");
+    }
+    #[cfg(target_os = "ios")]
     if let Some(home) = std::env::var_os("HOME").map(std::path::PathBuf::from) {
         // iOS app container: settings and the open session stay private in
         // Library; finished sessions go to Documents, which the Files app shows

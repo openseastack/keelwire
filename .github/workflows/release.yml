@@ -11,6 +11,7 @@
 #             Keelwire_<v>_x64_en-US.msi    for IT-managed installs
 #   Linux     Keelwire_<v>_amd64.AppImage   make executable, double-click
 #             .deb / .rpm                         for apt / dnf
+#   Android   Keelwire_<v>_android.apk     sideload (allow installs from this source once)
 #   Portable  keelwire-<v>-<platform>      single program, opens in the browser
 #             (incl. Raspberry Pi 64- and 32-bit for running headless aboard)
 #
@@ -174,3 +175,10 @@ jobs:
             tar czf "$d.tar.gz" "$d" && f="$d.tar.gz"
           fi
           gh release upload "$TAG" "$f" --clobber
+
+  android:
+    needs: create-release
+    uses: ./.github/workflows/android.yml
+    with:
+      tag: ${{ github.event.inputs.tag || github.ref_name }}
+    secrets: inherit

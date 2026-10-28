@@ -1,6 +1,6 @@
 [package]
 name = "keelwire-tauri"
-description = "Keelwire app for desktop and iPhone/iPad (Tauri v2)"
+description = "Keelwire app for desktop, iPhone/iPad and Android (Tauri v2)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
