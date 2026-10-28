@@ -5,7 +5,7 @@
   "identifier": "org.keelwire.app",
   "build": {
     "frontendDist": "../../ui/dist",
-    "beforeBuildCommand": "npm --prefix ../ui run build"
+    "beforeBuildCommand": "npm --prefix ../../ui run build"
   },
   "app": {
     "windows": [],

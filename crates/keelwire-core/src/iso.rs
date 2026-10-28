@@ -123,7 +123,7 @@ pub fn string_lau(b: &[u8]) -> Option<(String, usize)> {
     }
     let body = &b[2..len];
     let s = if b[1] == 0 {
-        let units: Vec<u16> = body.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        let units: Vec<u16> = body.as_chunks::<2>().0.iter().map(|&c| u16::from_le_bytes(c)).collect();
         String::from_utf16_lossy(&units).trim_end_matches('\0').to_string()
     } else {
         body.iter().take_while(|&&c| c != 0).map(|&c| c as char).collect()
@@ -223,7 +223,9 @@ impl ConfigInfo {
 pub fn parse_pgn_list(b: &[u8]) -> Option<(u8, Vec<u32>)> {
     let f = *b.first()?;
     let list = b[1..]
-        .chunks_exact(3)
+        .as_chunks::<3>()
+        .0
+        .iter()
         .map(|c| c[0] as u32 | (c[1] as u32) << 8 | (c[2] as u32) << 16)
         .filter(|&p| p != 0xFF_FFFF)
         .collect();
