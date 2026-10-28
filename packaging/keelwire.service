@@ -4,7 +4,7 @@
 #   sudo cp keelwire.service /etc/systemd/system/
 #   sudo systemctl enable --now keelwire
 [Unit]
-Description=Keelwire NMEA 2000 analyzer
+Description=Keelwire marine network analyzer
 After=network-online.target
 Wants=network-online.target
 

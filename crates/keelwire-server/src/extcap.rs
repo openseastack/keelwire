@@ -2,7 +2,7 @@
 //!
 //! Install by copying (or symlinking) the `keelwire` binary into
 //! Wireshark's personal extcap folder (Help → About → Folders). Wireshark then
-//! lists "Keelwire (NMEA 2000)" as a capture interface.
+//! lists "Keelwire (marine CAN)" as a capture interface.
 //!
 //! Source (configurable in Wireshark's interface options):
 //! * `http://host:8080` — stream from a running Keelwire (non-exclusive)
@@ -38,11 +38,11 @@ pub fn maybe_run(args: &[String]) -> Option<i32> {
     let has = |k: &str| args.iter().any(|a| a == k || a.starts_with(&format!("{k}=")));
     if has("--extcap-interfaces") {
         println!("extcap {{version={}}}{{help=https://github.com/openseastack/keelwire}}", crate::VERSION);
-        println!("interface {{value={IFACE}}}{{display=Keelwire (NMEA 2000)}}");
+        println!("interface {{value={IFACE}}}{{display=Keelwire (marine CAN)}}");
         return Some(0);
     }
     if has("--extcap-dlts") {
-        println!("dlt {{number=227}}{{name=CAN_SOCKETCAN}}{{display=SocketCAN (NMEA 2000)}}");
+        println!("dlt {{number=227}}{{name=CAN_SOCKETCAN}}{{display=SocketCAN}}");
         return Some(0);
     }
     if has("--extcap-config") {

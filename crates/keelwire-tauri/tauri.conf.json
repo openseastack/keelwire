@@ -17,8 +17,8 @@
     "active": true,
     "targets": "all",
     "category": "Utility",
-    "shortDescription": "Open-source NMEA 2000 analyzer",
-    "longDescription": "NMEA 2000 bus analysis, diagnostics and device configuration.",
+    "shortDescription": "Open-source marine network analyzer",
+    "longDescription": "Analysis, diagnostics and device configuration for boat electronics networks (marine CAN bus).",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -61,7 +61,7 @@
           "keelwire"
         ],
         "name": "Keelwire boat file",
-        "description": "NMEA 2000 network snapshot",
+        "description": "Boat network snapshot",
         "role": "Viewer",
         "mimeType": "application/x-keelwire"
       }

@@ -336,7 +336,7 @@ function AboutCard() {
         <dt className="text-muted">History buffer</dt>
         <dd>{s ? `${s.ring[0].toLocaleString()} of ${s.ring[1].toLocaleString()} messages` : ""}</dd>
       </dl>
-      <p className="mt-3 text-xs text-muted">PGN definitions from the CANboat project (Apache-2.0). Maretron and other product names are trademarks of their owners; this project is not affiliated with them.</p>
+      <p className="mt-3 text-xs text-muted">PGN definitions from the CANboat project (Apache-2.0), not from NMEA's published standard. NMEA 2000® is a registered trademark of the National Marine Electronics Association; Keelwire is not NMEA 2000 Certified and is not affiliated with or endorsed by NMEA. Maretron and other product names are trademarks of their owners, used only to identify the equipment Keelwire can connect to; Keelwire is not affiliated with them.</p>
     </Card>
   );
 }

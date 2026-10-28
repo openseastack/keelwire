@@ -18,8 +18,12 @@ https://github.com/Krillle/signalk-tlm100-config, which confirmed it on a TLM100
 Maretron-style switch control follows signalk-n2k-switching by Scott Bender (MIT),
 https://github.com/sbender9/signalk-n2k-switching.
 
-Maretron, IPG100, USB100, CLMD, Actisense, Yacht Devices,
-Garmin, Airmar, Simrad, Signal K and other product and company names are trademarks of their
-respective owners and are used only to describe compatibility. Keelwire is not affiliated with,
-sponsored by or endorsed by any of them.
-NMEA 2000 is a registered trademark of the National Marine Electronics Association.
+NMEA 2000® is a registered trademark of the National Marine Electronics Association (NMEA).
+Keelwire is not NMEA 2000 Certified and is not affiliated with, sponsored by or endorsed by
+NMEA. Keelwire decodes messages with the open CANboat database, not with NMEA's published
+standard, and the project contains no text from NMEA standards and no NMEA logo.
+
+Maretron, IPG100, USB100, CLMD, Actisense, Yacht Devices, Garmin, Airmar, Simrad, Signal K
+and other product and company names are trademarks of their respective owners, used only to
+identify the equipment Keelwire can connect to. Keelwire is not affiliated with, sponsored by
+or endorsed by any of them.

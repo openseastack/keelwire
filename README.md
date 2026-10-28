@@ -2,7 +2,7 @@
 
 <h1 align="center">Keelwire</h1>
 
-<p align="center"><b>See what's wrong on a boat's NMEA 2000 network, fix it safely, and know the fix took.</b><br>
+<p align="center"><b>See what's wrong on a boat's electronics network, fix it safely, and know the fix took.</b><br>
 Free and open source · Mac, Windows, Linux and Raspberry Pi · one small program, nothing else to install</p>
 
 <p align="center">
@@ -121,7 +121,7 @@ keelwire decode 127250 00393050FF7FFFFD                    # decode one message
 ### Wireshark
 
 Copy or symlink the `keelwire` binary into Wireshark's personal extcap folder
-(Help → About Wireshark → Folders). "Keelwire (NMEA 2000)" then appears as an
+(Help → About Wireshark → Folders). "Keelwire (marine CAN)" then appears as an
 interface; its *Source* option takes `http://host:8080` (a running instance) or an
 interface URI. Or pipe the live stream: `curl -sN http://host:8080/api/v1/stream/pcap | wireshark -k -i -`.
 
@@ -170,8 +170,8 @@ Apache-2.0. Includes the CANboat PGN database (Apache-2.0). See NOTICE.
 
 ## Trademarks
 
-Keelwire works with NMEA 2000® networks. NMEA 2000 is a registered trademark of the National
-Marine Electronics Association. Maretron and the other product names mentioned
-in this project belong to their owners and are used only to describe compatibility; Keelwire
-is not affiliated with or endorsed by them. See NOTICE.
+Keelwire reads and decodes the messages used on NMEA 2000® networks.
+NMEA 2000® is a registered trademark of the National Marine Electronics Association (NMEA). Keelwire is not NMEA 2000 Certified and is not affiliated with, sponsored by or endorsed by NMEA. It decodes messages with the open CANboat database, not with NMEA's published standard.
+
+Maretron, Actisense, Yacht Devices, Garmin, Airmar, Simrad, Signal K and other product and company names are trademarks of their respective owners, used only to identify the equipment Keelwire can connect to. Keelwire is not affiliated with, sponsored by or endorsed by any of them. See NOTICE.
 
