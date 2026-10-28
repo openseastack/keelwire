@@ -7,7 +7,7 @@ Free and open source · Mac, Windows, Linux and Raspberry Pi · one small progra
 
 <p align="center">
 <a href="https://github.com/openseastack/keelwire/releases/latest"><b>Download</b></a> ·
-<a href="https://openseastack.github.io/keelwire/"><b>Product tour</b></a> ·
+<a href="https://openseastack.org/keelwire/"><b>Product tour</b></a> ·
 <a href="docs/INSTALL.md">Install guide</a> ·
 <a href="docs/SPEC.md">Specification</a>
 </p>
@@ -39,7 +39,7 @@ see every message it sends, or switch to one row per PGN to find out who is fill
 
 <table><tr><th>By device</th><th>By PGN</th></tr><tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="site/assets/screens/table-devices-dark.webp"><img src="site/assets/screens/table-devices-day.webp" alt="Device table with one device expanded"></picture></td><td><picture><source media="(prefers-color-scheme: dark)" srcset="site/assets/screens/table-pgns-dark.webp"><img src="site/assets/screens/table-pgns-day.webp" alt="PGN table sorted by share of bus"></picture></td></tr></table>
 
-See every screen in the [product tour](https://openseastack.github.io/keelwire/). The full specification
+See every screen in the [product tour](https://openseastack.org/keelwire/). The full specification
 is [`docs/SPEC.md`](docs/SPEC.md); Appendix C there is the item-by-item feature checklist.
 
 ## What works
