@@ -16,8 +16,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: npm ci && npm run build
         working-directory: ui
-      - run: cargo test --workspace
-      - run: cargo clippy --workspace -- -D warnings
+      # keelwire-tauri needs WebKitGTK; it is built in the desktop job below.
+      - run: cargo test --workspace --exclude keelwire-tauri
+      - run: cargo clippy --workspace --exclude keelwire-tauri -- -D warnings
 
   ios-check:
     # The engine and the iOS glue must keep compiling for iPhone/iPad.
