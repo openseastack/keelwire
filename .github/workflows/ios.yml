@@ -47,7 +47,8 @@ jobs:
       - name: Build for the Simulator (no signing secrets)
         if: env.APPLE_API_KEY_P8 == ''
         working-directory: crates/keelwire-tauri
-        run: npm run --silent tauri -- ios build --target aarch64-sim --debug --ci
+        # Empty APPLE_API_* variables make the Tauri CLI attempt signing; drop them.
+        run: env -u APPLE_API_ISSUER -u APPLE_API_KEY_ID -u APPLE_API_KEY_P8 npm run --silent tauri -- ios build --target aarch64-sim --debug --ci
 
       - name: Build for the App Store
         if: env.APPLE_API_KEY_P8 != ''

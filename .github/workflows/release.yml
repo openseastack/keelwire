@@ -87,16 +87,28 @@ jobs:
       - name: Install the pinned Tauri CLI (tauri-action runs `npm run tauri`)
         run: npm ci
         working-directory: crates/keelwire-tauri
+      # macOS signing + notarization (all optional; see docs/RELEASING.md).
+      # Only exported when set: an empty APPLE_CERTIFICATE makes Tauri try to
+      # import it and fail.
+      - name: macOS signing secrets (optional)
+        if: startsWith(matrix.os, 'macos')
+        shell: bash
+        env:
+          S_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          S_APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          S_APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          S_APPLE_ID: ${{ secrets.APPLE_ID }}
+          S_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          S_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          for n in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            v="$(printenv "S_$n" || true)"
+            [ -n "$v" ] && { echo "$n<<__KW_EOF__"; echo "$v"; echo "__KW_EOF__"; } >> "$GITHUB_ENV"
+          done
+          true
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # macOS signing + notarization (all optional; see docs/RELEASING.md)
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           projectPath: crates/keelwire-tauri
           releaseId: ${{ needs.create-release.outputs.release_id }}
