@@ -1,0 +1,14 @@
+[package]
+name = "keelwire-ios"
+description = "iOS / iPadOS platform glue for Keelwire (share sheet, screen awake)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# Everything here compiles only for iOS; on other targets the crate is empty.
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-ui-kit = "0.3"
+objc2-core-foundation = "0.3"

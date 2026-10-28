@@ -1,0 +1,34 @@
+[package]
+name = "keelwire-tauri"
+description = "Keelwire app for desktop and iPhone/iPad (Tauri v2)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# The library is the app; desktop runs it from main.rs, iOS/Android link the
+# static library and call the generated mobile entry point.
+[lib]
+name = "keelwire_app"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "Keelwire"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+keelwire-server = { workspace = true }
+tokio = { workspace = true }
+tauri = { version = "2", features = [] }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+keelwire-ios = { path = "../keelwire-ios" }
+
+[features]
+# Tauri uses this flag to enable production behaviour in `cargo tauri build`.
+custom-protocol = ["tauri/custom-protocol"]

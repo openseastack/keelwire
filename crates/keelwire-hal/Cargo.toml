@@ -1,0 +1,23 @@
+[package]
+name = "keelwire-hal"
+description = "Bus interface drivers for Keelwire"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+keelwire-core = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+
+# Serial (USB) gateways: not on phones/tablets (the library links IOKit, which iOS apps may not use).
+[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
+tokio-serial = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+socketcan = { workspace = true }

@@ -1,0 +1,12 @@
+{
+  "name": "signalk-keelwire-tap",
+  "version": "0.1.0",
+  "description": "Forwards raw NMEA 2000 traffic from Signal K to Keelwire over a WebSocket",
+  "main": "index.js",
+  "keywords": ["signalk-node-server-plugin", "nmea2000"],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@canboat/canboatjs": "^3.0.0",
+    "ws": "^8.18.0"
+  }
+}

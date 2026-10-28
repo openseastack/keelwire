@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keelwire: NMEA 2000 analyzer</title>
+<meta name="description" content="Keelwire is a free, open-source NMEA 2000 analyzer for Mac, Windows, Linux and Raspberry Pi: plain-language diagnosis, a network map, traffic tables and confirmed configuration changes.">
+<meta property="og:title" content="Keelwire: open-source NMEA 2000 analyzer">
+<meta property="og:description" content="See what's wrong on a boat's NMEA 2000 network, fix it safely, and see that the fix took.">
+<meta property="og:image" content="assets/screens/map-grouped-day.webp">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Colour tokens match the app's Day, Dark and Night themes. */
+:root {
+  --paper: #F6F7F9; --panel: #FFFFFF; --shoal: #F1F3F6; --ink: #0D1726; --muted: #566173; --rule: #E3E6EB;
+  --sea: #1D5FD1; --sea-soft: rgba(29,95,209,.09); --on-sea: #FFFFFF; --stbd: #13804B; --caution: #9A5100; --port: #C4302B;
+  --shadow: 0 1px 2px rgba(13,23,38,.06), 0 12px 32px rgba(13,23,38,.08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="day"]):not([data-theme="night"]) {
+    --paper: #0E1116; --panel: #151A21; --shoal: #1B212A; --ink: #E8ECF1; --muted: #9AA5B4; --rule: #2A313C;
+    --sea: #6AA5FF; --sea-soft: rgba(106,165,255,.12); --on-sea: #0A101A; --stbd: #4CC38A; --caution: #F0A548; --port: #FF7A73;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1116; --panel: #151A21; --shoal: #1B212A; --ink: #E8ECF1; --muted: #9AA5B4; --rule: #2A313C;
+  --sea: #6AA5FF; --sea-soft: rgba(106,165,255,.12); --on-sea: #0A101A; --stbd: #4CC38A; --caution: #F0A548; --port: #FF7A73;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35); color-scheme: dark;
+}
+:root[data-theme="night"] {
+  --paper: #060000; --panel: #100202; --shoal: #180404; --ink: #E0533E; --muted: #A63A2A; --rule: #2C0806;
+  --sea: #FF6A4A; --sea-soft: rgba(255,106,74,.12); --on-sea: #060000; --stbd: #D9663F; --caution: #FF8A4A; --port: #FF5A3A;
+  --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: Geist, system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: var(--sea); }
+code, .mono { font-family: "Geist Mono", ui-monospace, monospace; font-size: .92em; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+/* Top bar */
+.top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--paper) 86%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--rule); }
+.top .wrap { display: flex; align-items: center; gap: 18px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -.01em; color: var(--ink); text-decoration: none; }
+.brand img { width: 30px; height: 30px; }
+.links { display: flex; gap: 2px; margin-left: 8px; }
+.links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 10px; border-radius: 8px; }
+.links a:hover { color: var(--ink); background: var(--shoal); }
+.spacer { flex: 1; }
+.seg { display: inline-flex; background: var(--shoal); border: 1px solid var(--rule); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 500; padding: 5px 11px; border-radius: 7px; cursor: pointer; min-height: 30px; }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.gh { display: inline-flex; align-items: center; gap: 7px; color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 600; border: 1px solid var(--rule); background: var(--panel); border-radius: 9px; padding: 0 12px; height: 36px; }
+@media (max-width: 900px) { .links { display: none; } }
+@media (max-width: 520px) { .gh span { display: none; } .top .wrap { gap: 10px; } .seg button { padding: 5px 8px; font-size: 12.5px; } .brand { font-size: 16px; } }
+
+/* Hero */
+.hero { padding: 64px 0 28px; }
+.badge { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 500; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); border-radius: 99px; padding: 4px 12px; }
+.badge b { color: var(--stbd); font-weight: 600; }
+h1 { font-size: clamp(34px, 5.2vw, 58px); line-height: 1.05; letter-spacing: -.03em; margin: 18px 0 18px; max-width: 900px; font-weight: 700; }
+h1 em { font-style: normal; color: var(--sea); }
+.lead { font-size: 19px; color: var(--muted); max-width: 760px; margin: 0 0 28px; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 18px; border-radius: 10px; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); }
+.btn.primary { background: var(--sea); border-color: var(--sea); color: var(--on-sea); }
+.hero-shot { margin-top: 40px; border-radius: 16px; overflow: hidden; border: 1px solid var(--rule); box-shadow: var(--shadow); background: var(--panel); }
+.hero-shot img { display: block; width: 100%; height: auto; }
+
+/* Pillars */
+.pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 36px 0 0; }
+@media (max-width: 900px) { .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .pillars { grid-template-columns: 1fr; } }
+.pillar { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 18px; }
+.pillar svg { color: var(--sea); }
+.pillar h3 { margin: 10px 0 4px; font-size: 16px; }
+.pillar p { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Sections */
+section.block { padding: 72px 0 8px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--sea); }
+h2 { font-size: clamp(26px, 3.4vw, 36px); letter-spacing: -.02em; line-height: 1.15; margin: 8px 0 10px; }
+.sub { color: var(--muted); max-width: 780px; margin: 0 0 26px; font-size: 17px; }
+
+/* Tabbed screenshot viewer */
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 330px; background: var(--panel); border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+@media (max-width: 980px) { .viewer { grid-template-columns: 1fr; } }
+.viewer .stage { background: var(--shoal); padding: 16px; display: flex; align-items: center; justify-content: center; min-height: 300px; border-right: 1px solid var(--rule); }
+.viewer .stage img { display: block; width: auto; height: auto; max-width: 100%; max-height: 640px; object-fit: contain; border-radius: 10px; border: 1px solid var(--rule); background: var(--panel); }
+.viewer .stage img.tall { max-height: 620px; }
+.viewer .info { padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 12px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.tab { border: 1px solid var(--rule); background: var(--panel); color: var(--muted); font: inherit; font-size: 14px; font-weight: 500; padding: 0 14px; height: 38px; border-radius: 99px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); font-weight: 600; }
+.info h3 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+.info p { margin: 0; color: var(--muted); font-size: 15px; }
+.info ul { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.info li { font-size: 14px; display: flex; gap: 9px; }
+.info li::before { content: ""; flex: 0 0 7px; height: 7px; margin-top: 7px; border-radius: 50%; background: var(--sea); }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; counter-reset: s; }
+@media (max-width: 900px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .steps { grid-template-columns: 1fr; } }
+.step { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; position: relative; }
+.step::before { counter-increment: s; content: counter(s); display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 50%; background: var(--sea-soft); color: var(--sea); font-weight: 700; font-size: 14px; }
+.step h3 { margin: 12px 0 6px; font-size: 16px; }
+.step p { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* Hardware */
+.hw { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+@media (max-width: 900px) { .hw { grid-template-columns: 1fr; } }
+.unit { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.unit h3 { margin: 0; font-size: 17px; }
+.unit p { margin: 0; color: var(--muted); font-size: 14px; }
+.unit ul { margin: 2px 0 0; padding-left: 18px; font-size: 14px; }
+.status { align-self: flex-start; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--shoal); color: var(--muted); border: 1px solid var(--rule); }
+.status.go { color: var(--stbd); }
+.diagram { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 12px; overflow-x: auto; }
+.diagram svg { display: block; min-width: 760px; width: 100%; height: auto; }
+
+/* Table */
+.tablebox { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 620px; }
+th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--shoal); }
+td:first-child { font-weight: 600; width: 26%; }
+td.us { color: var(--ink); }
+td.them { color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+
+/* Install */
+.dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .dl { grid-template-columns: 1fr; } }
+.dl .card { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; }
+.dl h3 { margin: 0 0 4px; font-size: 17px; }
+.dl p { margin: 0; color: var(--muted); font-size: 14px; }
+pre { background: var(--shoal); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.6; }
+
+footer { margin-top: 80px; border-top: 1px solid var(--rule); padding: 30px 0 50px; color: var(--muted); font-size: 13.5px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 18px 40px; justify-content: space-between; }
+footer p { margin: 0 0 6px; max-width: 640px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/keelwire-icon.svg" alt="" width="30" height="30">Keelwire</a>
+    <nav class="links" aria-label="Sections">
+      <a href="#map">Network map</a>
+      <a href="#tables">Tables</a>
+      <a href="#screens">Screens</a>
+      <a href="#safety">Safe changes</a>
+      <a href="#hardware">Hardware</a>
+      <a href="#install">Install</a>
+    </nav>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-theme-btn="day">Day</button>
+      <button type="button" data-theme-btn="dark">Dark</button>
+      <button type="button" data-theme-btn="night">Night</button>
+    </div>
+    <a class="gh" href="https://github.com/openseastack/keelwire" aria-label="Keelwire on GitHub">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.11 3.06.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap">
+    <section class="hero">
+      <span class="badge"><b>Open source</b> Apache 2.0 · Mac, Windows, Linux, Raspberry Pi</span>
+      <h1>See what’s wrong on a boat’s network, <em>fix it safely</em>, and know the fix took.</h1>
+      <p class="lead">Keelwire is a free NMEA 2000 analyzer for marine technicians and owners. It watches every message on the bus, tells you in plain language what needs attention, suggests the fix, and checks that the device accepted it. One small program, no runtime to install, and it works with the gateways you already carry.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/openseastack/keelwire/releases/latest">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Download Keelwire
+        </a>
+        <a class="btn" href="https://github.com/openseastack/keelwire">View the source</a>
+      </div>
+      <div class="hero-shot">
+        <img class="shot" id="hero-img" src="assets/screens/overview-day.webp" alt="Keelwire Overview: ten devices online and one thing to fix, a fuel-tank instance conflict with a one-click fix, bus load, errors and declared load." width="1800" height="1125">
+      </div>
+      <div class="pillars">
+        <div class="pillar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>
+          <h3>One program, nothing else</h3>
+          <p>About 10 MB with the interface and message database built in. Desktop app, or headless on a Raspberry Pi serving any phone aboard.</p>
+        </div>
+        <div class="pillar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12h18"/><path d="M7 12V6"/><path d="M12 12v6"/><path d="M17 12V6"/><circle cx="7" cy="5" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="17" cy="5" r="2"/></svg>
+          <h3>Your gateway</h3>
+          <p>Maretron IPG100, Actisense NGT-1 and ASCII gateways, Yacht Devices, SocketCAN on a Pi, a Signal K tap, or a capture file.</p>
+        </div>
+        <div class="pillar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+          <h3>Plain-language diagnosis</h3>
+          <p>Instance conflicts, silent devices, bus load and declared power, worked out continuously and explained with a suggested fix.</p>
+        </div>
+        <div class="pillar">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <h3>Changes you can trust</h3>
+          <p>Locked until you unlock them, staged beside current values, sent as standard commands and read back from the device.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="map">
+      <span class="eyebrow">Network map</span>
+      <h2>A map of the backbone that never guesses</h2>
+      <p class="sub">NMEA 2000 doesn’t tell anyone where a device sits on the cable, so Keelwire doesn’t pretend to know. Until a technician arranges it, devices are grouped by type and the map says so. Drag them into place once, mark the terminators and the power tee, and every later visit opens with the real layout.</p>
+      <div class="tabs" role="tablist" aria-label="Network map views" data-viewer="map"></div>
+      <div class="viewer" data-stage="map">
+        <div class="stage"><img class="shot" alt=""></div>
+        <div class="info"></div>
+      </div>
+    </section>
+
+    <section class="block" id="tables">
+      <span class="eyebrow">Traffic tables</span>
+      <h2>Who is talking, how much, and what they’re saying</h2>
+      <p class="sub">Two tables over the same live counters: one row per device, or one row per message type. Choose your columns, filter, search by name, <span class="mono">@address</span>, serial or PGN, and export to CSV.</p>
+      <div class="tabs" role="tablist" aria-label="Table views" data-viewer="tables"></div>
+      <div class="viewer" data-stage="tables">
+        <div class="stage"><img class="shot" alt=""></div>
+        <div class="info"></div>
+      </div>
+    </section>
+
+    <section class="block" id="screens">
+      <span class="eyebrow">The app</span>
+      <h2>Five screens, one job each</h2>
+      <p class="sub"><b>Overview</b> tells you what needs fixing. <b>Devices</b> shows what’s on the network. <b>Traffic</b> shows every message on the wire. <b>Switching</b> controls circuits. <b>Settings</b> connects to your gateway. The screenshots come from Keelwire’s built-in simulated boat, which has a fuel-tank conflict to fix.</p>
+      <div class="tabs" role="tablist" aria-label="App screens" data-viewer="screens"></div>
+      <div class="viewer" data-stage="screens">
+        <div class="stage"><img class="shot" alt=""></div>
+        <div class="info"></div>
+      </div>
+    </section>
+
+    <section class="block" id="safety">
+      <span class="eyebrow">Safe changes</span>
+      <h2>Nothing reaches the bus by accident</h2>
+      <p class="sub">Configuring a boat’s network can switch off a pump or confuse a chartplotter. Keelwire treats every change as something to check, not something to fire and forget.</p>
+      <div class="steps">
+        <div class="step"><h3>Locked by default</h3><p>Changes and switching stay locked until you press <b>Changes locked</b>. They lock again after 15 minutes without a change. The headless server only allows them when started with <span class="mono">--allow-tx</span>.</p></div>
+        <div class="step"><h3>Staged beside the old value</h3><p>Edits to instances, descriptions and offsets sit next to what the device has now, so you see exactly what will change before anything is sent.</p></div>
+        <div class="step"><h3>Standard commands</h3><p>Settings go out as NMEA 2000 Group Function commands (PGN 126208), the standard way to configure devices. Maretron-specific settings use the community-documented Maretron commands.</p></div>
+        <div class="step"><h3>Read back to confirm</h3><p>Keelwire asks the device for the value again and only reports success when it matches.</p></div>
+      </div>
+    </section>
+
+    <section class="block" id="hardware">
+      <span class="eyebrow">In development</span>
+      <h2>The Keelwire technician pack</h2>
+      <p class="sub">Commercial gateways pass traffic but say nothing about the health of the cable itself. Two small ESP32 units will fill that gap. Today the app shows “Not measured” wherever a gateway can’t measure; with the pack, those tiles become real readings.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1100 250" role="img" aria-label="Diagram: a backbone with terminators at both ends, devices on drops, the Keelwire Gateway on one drop talking Wi-Fi to a laptop, and the Keelwire Power Tee at one end where the battery feeds the network, linked to the gateway by ESP-NOW.">
+          <defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="var(--rule)"/></pattern></defs>
+          <rect width="1100" height="250" fill="url(#g)"/>
+          <line x1="70" y1="150" x2="905" y2="150" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" opacity=".85"/>
+          <rect x="30" y="130" width="40" height="40" rx="9" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/>
+          <path d="M34 150h5l3-8 4 16 4-16 4 16 4-16 3 8h5" fill="none" stroke="var(--ink)" stroke-width="1.8"/>
+          <text x="50" y="190" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="Geist, sans-serif">Terminator</text>
+          <g font-family="Geist, sans-serif" font-size="13">
+            <g><line x1="160" y1="150" x2="160" y2="96" stroke="var(--sea)" stroke-width="3"/><rect x="112" y="56" width="96" height="40" rx="9" fill="var(--panel)" stroke="var(--rule)"/><text x="160" y="81" text-anchor="middle" fill="var(--ink)" font-weight="600">GPS</text></g>
+            <g><line x1="270" y1="150" x2="270" y2="196" stroke="var(--sea)" stroke-width="3"/><rect x="222" y="196" width="96" height="40" rx="9" fill="var(--panel)" stroke="var(--rule)"/><text x="270" y="221" text-anchor="middle" fill="var(--ink)" font-weight="600">Compass</text></g>
+            <g><line x1="380" y1="150" x2="380" y2="96" stroke="var(--sea)" stroke-width="3"/><rect x="312" y="40" width="136" height="56" rx="10" fill="var(--panel)" stroke="var(--sea)" stroke-width="2"/><text x="380" y="63" text-anchor="middle" fill="var(--ink)" font-weight="700">Keelwire Gateway</text><text x="380" y="82" text-anchor="middle" fill="var(--muted)" font-size="11.5">errors · termination · volts</text></g>
+            <g><line x1="510" y1="150" x2="510" y2="196" stroke="var(--sea)" stroke-width="3"/><rect x="462" y="196" width="96" height="40" rx="9" fill="var(--panel)" stroke="var(--rule)"/><text x="510" y="221" text-anchor="middle" fill="var(--ink)" font-weight="600">Engine</text></g>
+            <g><line x1="620" y1="150" x2="620" y2="96" stroke="var(--sea)" stroke-width="3"/><rect x="572" y="56" width="96" height="40" rx="9" fill="var(--panel)" stroke="var(--rule)"/><text x="620" y="81" text-anchor="middle" fill="var(--ink)" font-weight="600">Tanks</text></g>
+            <g><line x1="730" y1="150" x2="730" y2="196" stroke="var(--sea)" stroke-width="3"/><rect x="682" y="196" width="96" height="40" rx="9" fill="var(--panel)" stroke="var(--rule)"/><text x="730" y="221" text-anchor="middle" fill="var(--ink)" font-weight="600">Switching</text></g>
+          </g>
+          <rect x="905" y="116" width="150" height="68" rx="12" fill="var(--panel)" stroke="var(--ink)" stroke-width="2.5"/>
+          <text x="980" y="141" text-anchor="middle" font-family="Geist, sans-serif" font-size="13.5" font-weight="700" fill="var(--ink)">Keelwire Power Tee</text>
+          <text x="980" y="160" text-anchor="middle" font-family="Geist Mono, monospace" font-size="11.5" fill="var(--muted)">12.71 V · 0.74 A</text>
+          <text x="980" y="176" text-anchor="middle" font-family="Geist, sans-serif" font-size="11.5" fill="var(--muted)">switchable terminator</text>
+          <line x1="980" y1="184" x2="980" y2="222" stroke="var(--port)" stroke-width="2.5"/>
+          <text x="980" y="240" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" fill="var(--muted)">battery feed</text>
+          <path d="M448 50 C 640 -10, 860 20, 960 112" fill="none" stroke="var(--sea)" stroke-width="2" stroke-dasharray="6 6"/>
+          <text x="700" y="22" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" fill="var(--sea)" font-weight="600">ESP-NOW link</text>
+          <path d="M312 60 C 250 30, 230 26, 205 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 5"/>
+          <text x="196" y="28" text-anchor="end" font-family="Geist, sans-serif" font-size="12" fill="var(--muted)">Wi-Fi to the app</text>
+        </svg>
+      </div>
+      <div class="hw">
+        <div class="unit">
+          <span class="status go">Rev A boards ordering</span>
+          <h3>Keelwire Gateway</h3>
+          <p>An always-on logger and Wi-Fi bridge.</p>
+          <ul><li>Streams every frame to the app</li><li>CAN error counts by type</li><li>Approximate supply voltage, temperature, Wi-Fi signal</li><li>Coordinates a Power Tee</li></ul>
+        </div>
+        <div class="unit">
+          <span class="status">After bench proof of concept</span>
+          <h3>Keelwire Tech Gateway</h3>
+          <p>The technician’s version: a panel Micro-C plug and an isolated USB port.</p>
+          <ul><li>Termination measured live: both, one missing, one extra</li><li>Precise voltage at any drop</li><li>Cable resistance and distance to the power tee</li><li>Predicted voltage at full declared load</li></ul>
+        </div>
+        <div class="unit">
+          <span class="status">In design</span>
+          <h3>Keelwire Power Tee</h3>
+          <p>Replaces the boat’s power-insertion tee. Its power path is passive, so the network keeps power even if its electronics fail.</p>
+          <ul><li>Real bus current, and how it splits each way</li><li>Supply voltage at the feed</li><li>A terminator switched from the app, with the technician’s confirmation</li></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="compare">
+      <span class="eyebrow">Why Keelwire</span>
+      <h2>Built for the person in the bilge</h2>
+      <p class="sub">Vendor tools are good at their own products. Keelwire is meant for a mixed boat, on whatever computer is to hand.</p>
+      <div class="tablebox">
+        <table>
+          <thead><tr><th>What you need</th><th>Keelwire</th><th>Typical single-vendor tool</th></tr></thead>
+          <tbody>
+            <tr><td>Runs on</td><td class="us">Mac, Windows, Linux, Raspberry Pi, and any phone or tablet aboard through the Pi</td><td class="them">Often Windows only</td></tr>
+            <tr><td>Gateways</td><td class="us">Several makers’ gateways, SocketCAN, Signal K and capture files</td><td class="them">Usually the vendor’s own</td></tr>
+            <tr><td>Finding problems</td><td class="us">Continuous analysis that names the problem and offers the fix</td><td class="them">Usually you read the device list yourself</td></tr>
+            <tr><td>Seeing the network</td><td class="us">Backbone map arranged once by the technician, saved, with traffic on each drop</td><td class="them">Varies</td></tr>
+            <tr><td>Traffic</td><td class="us">Per-device and per-PGN tables, live message view, Wireshark capture</td><td class="them">Varies</td></tr>
+            <tr><td>Making changes</td><td class="us">Locked by default, staged, standard commands, read back</td><td class="them">Varies</td></tr>
+            <tr><td>Cost and licence</td><td class="us">Free, Apache 2.0, source on GitHub</td><td class="them">Commercial</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block" id="install">
+      <span class="eyebrow">Install</span>
+      <h2>Download, open, connect</h2>
+      <p class="sub">Every download contains everything Keelwire needs. Pick yours from the <a href="https://github.com/openseastack/keelwire/releases/latest">Releases page</a>.</p>
+      <div class="dl">
+        <div class="card"><h3>Mac</h3><p>Open the <span class="mono">.dmg</span> and drag Keelwire to Applications. Apple Silicon and Intel, macOS 11 or later.</p></div>
+        <div class="card"><h3>Windows</h3><p>Run the setup <span class="mono">.exe</span>. No administrator rights needed. An <span class="mono">.msi</span> is there for IT-managed installs.</p></div>
+        <div class="card"><h3>Linux and Raspberry Pi</h3><p>AppImage, <span class="mono">.deb</span> or <span class="mono">.rpm</span>. On a Pi with a CAN HAT, run it headless and open it from your phone.</p></div>
+      </div>
+      <pre><code># Raspberry Pi aboard, serving the interface on the boat's Wi-Fi
+./keelwire --headless --interface socketcan:can0 --port 8080
+
+# No boat handy? Try the simulated one
+./keelwire --interface "sim:?conflict=1"</code></pre>
+      <p class="sub" style="font-size:15px">Full instructions: <a href="https://github.com/openseastack/keelwire/blob/main/docs/INSTALL.md">INSTALL.md</a>. Building from source: <a href="https://github.com/openseastack/keelwire#build-from-source-quick-start">README</a>.</p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <p><strong style="color:var(--ink)">Keelwire</strong> · open-source NMEA 2000 diagnostics · Apache 2.0</p>
+      <p><a href="https://github.com/openseastack/keelwire">github.com/openseastack/keelwire</a></p>
+      <p>This page counts visits with GoatCounter: no cookies, no personal data.</p>
+    </div>
+    <div>
+      <p>NMEA 2000® is a registered trademark of the National Marine Electronics Association. Maretron, Actisense, Yacht Devices, Garmin, Airmar, Simrad, Signal K and other names belong to their owners and are used only to describe compatibility. Keelwire is not affiliated with or endorsed by them.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+const VIEWS = {
+  map: [
+    { tab: "Order unknown", img: "map-grouped", alt: "Network map grouped by type with an Order unknown banner, terminators not set, and two fuel-tank senders marked amber.", title: "Honest until arranged", text: "Devices are grouped by type under a clear “Order unknown” banner. Terminators and the power tee show as “not set” rather than being invented.", points: ["Drop thickness follows each device’s traffic", "Amber marks a device that needs attention; dashed grey, one that stopped responding", "A bus-health strip says what this gateway can and can’t measure"] },
+    { tab: "Arranged", img: "map-arranged", alt: "Network map in dark theme in physical order, with End A terminated, End B marked missing, and the power tee placed.", title: "The real layout, saved", text: "Arrange backbone lets the technician drag cards into cable order, mark each end’s terminator and drop the power tee in place. The next visit opens with it.", points: ["Click an end to mark its terminator present or missing", "Place the power tee between any two drops"] },
+    { tab: "One side", img: "map-oneside", alt: "Network map with all cards on one side, the backbone wrapping onto a second row.", title: "Big boats, bigger cards", text: "One-side layout gives each card more room and wraps the backbone into rows that fit the window, so a 40-device yacht stays readable.", points: ["Switch between Alternating and One side at any time", "Rows run back and forth like the cable does"] },
+    { tab: "Card fields", img: "map-cardfields", alt: "Card fields menu open over the map, with address, live reading, share of bus, instance, LEN, software and serial options.", title: "Pick what each card shows", text: "Name, type and status always show. Add up to three more lines: address and rate, live reading, share of bus, instance, LEN, software or serial. Everything else lives in the table.", points: ["Limited to three so the map stays a map"] },
+    { tab: "Phone", img: "map-phone", alt: "Network map on a phone: a vertical backbone with one device per row.", title: "On a phone in the bilge", text: "On a narrow screen the backbone runs top to bottom with one device per row, and the health tiles scroll sideways.", points: ["Works from any phone through a Raspberry Pi running Keelwire headless"] },
+  ],
+  tables: [
+    { tab: "By device", img: "table-devices", alt: "Device table sorted by messages per second, with the J2K100 row expanded to list every PGN it sends.", title: "Every device at a glance", text: "Messages per second, share of the bus, totals, PGNs sent, incomplete multi-frame messages, last heard and LEN. Open a row to see every message the device sends.", points: ["Expand a row for each PGN’s rate, count and latest decoded value", "Filter: online, not responding, needs attention, type, maker", "Reset counters to start a fresh measurement"] },
+    { tab: "By PGN", img: "table-pgns", alt: "PGN table sorted by share of bus, with senders as chips and the fluid-level conflict highlighted.", title: "Who is filling the bus?", text: "The same counters turned inside out: one row per message type, sorted by its share of the bus, with every sender listed.", points: ["Multi-frame messages show how many CAN frames they cost", "Flags several senders, messages that stopped, and instance conflicts", "Click a PGN to jump to it in Traffic"] },
+    { tab: "Columns", img: "table-columns", alt: "The Columns chooser grouped into Identity, Traffic, Health and power, and Setup.", title: "Your columns, remembered", text: "Turn on serials, instances, hardware versions, certification level, installation descriptions and more. Instance and description cells can be edited in place once changes are unlocked.", points: ["Grouped into Identity, Traffic, Health and power, and Setup", "Export exactly what’s shown to CSV, or print it"] },
+  ],
+  screens: [
+    { tab: "Overview", img: "overview", alt: "Overview screen: one thing to fix with a Set to instance 1 button, then bus load and busiest devices.", title: "Is anything wrong?", text: "The home screen leads with the verdict, “10 devices online. One thing to fix.”, and offers the fix with one click.", points: ["Here: two fuel-tank senders both claim instance 0", "Bus load over time, errors, declared load (LEN) and the busiest devices"] },
+    { tab: "By system", img: "devices-systems", alt: "Devices grouped by system with live readings and sparklines.", title: "What’s on the network?", text: "Devices grouped into navigation, engine and power, tanks, switching and displays, each with what it’s reporting right now.", points: ["Live readings in plain units", "A message-rate sparkline per device"] },
+    { tab: "Device", img: "device-panel", alt: "Device panel for a DST110 showing depth, speed and temperature, a depth chart, setup and identity.", title: "Everything about one device", text: "Big live values, a history of the main reading, how it’s set up, and its identity: serial, software, certification and LEN.", points: ["Settings tab for instances, descriptions and offsets", "Messages tab lists everything it sends, live"] },
+    { tab: "Traffic", img: "traffic", alt: "Traffic screen with a messages-per-second chart by sender and one row per message type.", title: "What’s actually on the wire?", text: "One line per message type and sender, updated in place with its rate and latest value, or every frame as it arrives.", points: ["Filter expressions such as pgn == 127505", "Record a capture or stream live into Wireshark"] },
+    { tab: "Switching", img: "switching", alt: "Switching screen with a CLMD16's sixteen channels, currents and load share.", title: "Digital switching", text: "Load-controller channels with their current draw and share of the total, and keypads shown as read-only keys. Switches stay locked until unlocked.", points: ["Total load, circuits on, and tripped breakers at a glance"] },
+    { tab: "Settings", img: "settings", alt: "Settings screen with connection choices, listen-only or identify mode, and capture to file.", title: "Connect and choose how to behave", text: "Pick a gateway, choose listen-only or identify mode, record captures and manage boat files.", points: ["Listen only sends nothing at all"] },
+  ],
+};
+
+const current = {};
+const shows = {};
+let themeNow = "day";
+const theme = () => themeNow;
+function build(key) {
+  const tabs = document.querySelector(`[data-viewer="${key}"]`);
+  const stage = document.querySelector(`[data-stage="${key}"]`);
+  const img = stage.querySelector("img");
+  const info = stage.querySelector(".info");
+  const show = (i) => {
+    current[key] = i;
+    const v = VIEWS[key][i];
+    tabs.querySelectorAll("button").forEach((b, j) => b.setAttribute("aria-selected", String(i === j)));
+    img.src = `assets/screens/${v.img}-${theme()}.webp`;
+    img.classList.toggle("tall", v.img === "map-phone");
+    img.alt = v.alt;
+    info.replaceChildren();
+    const h = document.createElement("h3"); h.textContent = v.title;
+    const p = document.createElement("p"); p.textContent = v.text;
+    info.append(h, p);
+    if (v.points.length) {
+      const ul = document.createElement("ul");
+      for (const t of v.points) { const li = document.createElement("li"); li.textContent = t; ul.append(li); }
+      info.append(ul);
+    }
+  };
+  VIEWS[key].forEach((v, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tab"; b.setAttribute("role", "tab"); b.textContent = v.tab;
+    b.addEventListener("click", () => show(i));
+    tabs.append(b);
+  });
+  shows[key] = show;
+  show(0);
+}
+
+function applyTheme(t, persist) {
+  const effective = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "day");
+  if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+  document.querySelectorAll("[data-theme-btn]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeBtn === effective)));
+  themeNow = effective;
+  document.getElementById("hero-img").src = `assets/screens/overview-${effective}.webp`;
+  for (const k of Object.keys(shows)) shows[k](current[k] ?? 0);
+  if (persist) { try { localStorage.setItem("keelwire.site.theme", t); } catch (e) {} }
+}
+let saved = null;
+try { saved = localStorage.getItem("keelwire.site.theme"); } catch (e) {}
+themeNow = saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "day");
+Object.keys(VIEWS).forEach(build);
+applyTheme(saved, false);
+document.querySelectorAll("[data-theme-btn]").forEach((b) => b.addEventListener("click", () => applyTheme(b.dataset.themeBtn, true)));
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { let t = null; try { t = localStorage.getItem("keelwire.site.theme"); } catch (e) {} if (!t) applyTheme(null, false); });
+</script>
+<script>
+/* Visit counting with GoatCounter: no cookies and no personal data. Runs only on the published site. */
+if (location.hostname.endsWith("github.io")) {
+  const gc = document.createElement("script");
+  gc.async = true;
+  gc.src = "https://gc.zgo.at/count.js";
+  gc.dataset.goatcounter = "https://keelwire.goatcounter.com/count";
+  document.body.append(gc);
+}
+</script>
+</body>
+</html>

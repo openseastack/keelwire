@@ -1,0 +1,3 @@
+[build.env]
+# Lets CI build the web UI on the host and skip it inside the cross container.
+passthrough = ["KEELWIRE_SKIP_UI_BUILD"]

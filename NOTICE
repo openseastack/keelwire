@@ -1,0 +1,25 @@
+Keelwire
+Copyright 2026 The Keelwire contributors
+
+This product includes the CANboat PGN database (crates/keelwire-core/schemas/canboat.json)
+and test captures from the CANboat project, (C) 2009-2026 Kees Verruijt, licensed under the
+Apache License 2.0. https://github.com/canboat/canboat
+
+The Maretron IPG100 transport and the Maretron proprietary opcode table are implemented
+from the CANboat project's documentation (maretron-ipg, canboat.json).
+
+Maretron command definitions (126208-wrapped requests, SSC300 compass commands, TLM100
+level-configuration reply, TLM100 product code) are based on the n2k project by Martin
+Bjorklund, MIT License, https://github.com/mbj4668/n2k (src/maretron-pgns.yaml,
+src/n2k_maretron.erl), and Maretron's public SSC300 user's manual.
+
+The tank-capacity command layout follows signalk-tlm100-config by Krillle (MIT),
+https://github.com/Krillle/signalk-tlm100-config, which confirmed it on a TLM100.
+Maretron-style switch control follows signalk-n2k-switching by Scott Bender (MIT),
+https://github.com/sbender9/signalk-n2k-switching.
+
+Maretron, IPG100, USB100, CLMD, Actisense, Yacht Devices,
+Garmin, Airmar, Simrad, Signal K and other product and company names are trademarks of their
+respective owners and are used only to describe compatibility. Keelwire is not affiliated with,
+sponsored by or endorsed by any of them.
+NMEA 2000 is a registered trademark of the National Marine Electronics Association.

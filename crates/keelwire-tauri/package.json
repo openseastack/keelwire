@@ -1,0 +1,11 @@
+{
+  "name": "keelwire-app-tools",
+  "private": true,
+  "description": "Pins the Tauri CLI for desktop and iOS builds. The generated Xcode project calls `npm run tauri` from here.",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4"
+  }
+}

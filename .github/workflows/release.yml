@@ -1,0 +1,173 @@
+# Builds installable packages for every platform and attaches them to a
+# draft GitHub Release. Run it by pushing a version tag:
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# (or from the Actions tab: "Release" → Run workflow, with the tag).
+#
+# What end users get (nothing else to install):
+#   macOS     Keelwire_<v>_universal.dmg   drag to Applications (Apple Silicon + Intel)
+#   Windows   Keelwire_<v>_x64-setup.exe    per-user installer, no admin rights needed
+#             Keelwire_<v>_x64_en-US.msi    for IT-managed installs
+#   Linux     Keelwire_<v>_amd64.AppImage   make executable, double-click
+#             .deb / .rpm                         for apt / dnf
+#   Portable  keelwire-<v>-<platform>      single program, opens in the browser
+#             (incl. Raspberry Pi 64- and 32-bit for running headless aboard)
+#
+# Code signing is optional: set the secrets listed in docs/RELEASING.md and
+# the macOS app is signed + notarized and the Windows installer is signed.
+# Without them the packages work but show a first-launch warning.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to release, e.g. v0.1.0 (must match the version in Cargo.toml)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.rel.outputs.id }}
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        name: Check the tag matches the version
+        run: |
+          v=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          c=$(python3 -c "import json;print(json.load(open('crates/keelwire-tauri/tauri.conf.json'))['version'])")
+          [ "v$v" = "$TAG" ] || { echo "::error::Tag $TAG does not match Cargo.toml version $v"; exit 1; }
+          [ "$c" = "$v" ] || { echo "::error::tauri.conf.json version $c does not match Cargo.toml $v"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - id: rel
+        name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "Keelwire $TAG" --notes-file docs/release-notes-template.md
+          echo "id=$(gh api repos/${{ github.repository }}/releases --jq '.[] | select(.tag_name=="'"$TAG"'") | .id')" >> "$GITHUB_OUTPUT"
+
+  desktop:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, args: "--target universal-apple-darwin", rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin" }
+          - { os: windows-latest, args: "", rust_targets: "" }
+          - { os: ubuntu-22.04, args: "", rust_targets: "" }
+    runs-on: ${{ matrix.os }}
+    env:
+      WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: ui/package-lock.json }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.rust_targets }}" }
+      - uses: Swatinem/rust-cache@v2
+        with: { key: "${{ matrix.os }}-desktop" }
+      - if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libudev-dev
+      - run: npm ci
+        working-directory: ui
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing + notarization (all optional; see docs/RELEASING.md)
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: crates/keelwire-tauri
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+      - if: startsWith(matrix.os, 'windows') && env.WINDOWS_CERTIFICATE != ''
+        name: Sign Windows installers (optional)
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $pfx = "$env:RUNNER_TEMP\cert.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Select-Object -Last 1
+          $files = Get-ChildItem target\release\bundle -Recurse -Include *.exe,*.msi
+          foreach ($f in $files) {
+            & $signtool.FullName sign /f $pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /fd sha256 /tr http://timestamp.digicert.com /td sha256 $f.FullName
+            gh release upload "$env:TAG" $f.FullName --clobber
+          }
+
+  portable:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, name: linux-x86_64 }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu, name: raspberry-pi-64bit, cross: true }
+          - { os: ubuntu-latest, target: armv7-unknown-linux-gnueabihf, name: raspberry-pi-32bit, cross: true }
+          - { os: macos-latest, target: universal, name: macos-universal }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, name: windows-x64 }
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.create-release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: ui/package-lock.json }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.target == 'universal' && 'aarch64-apple-darwin,x86_64-apple-darwin' || matrix.target }}" }
+      - uses: Swatinem/rust-cache@v2
+        with: { key: "${{ matrix.name }}-portable" }
+      - name: Build the web interface (embedded into the binary)
+        run: npm ci && npm run build
+        working-directory: ui
+      - if: matrix.cross
+        env: { KEELWIRE_SKIP_UI_BUILD: "1" }
+        run: cargo install cross --locked && cross build --release -p keelwire-server --target ${{ matrix.target }}
+      - if: ${{ !matrix.cross && matrix.target != 'universal' }}
+        env: { KEELWIRE_SKIP_UI_BUILD: "1" }
+        run: cargo build --release -p keelwire-server --target ${{ matrix.target }}
+      - if: matrix.target == 'universal'
+        env: { KEELWIRE_SKIP_UI_BUILD: "1" }
+        run: |
+          cargo build --release -p keelwire-server --target aarch64-apple-darwin
+          cargo build --release -p keelwire-server --target x86_64-apple-darwin
+          mkdir -p target/universal/release
+          lipo -create -output target/universal/release/keelwire target/aarch64-apple-darwin/release/keelwire target/x86_64-apple-darwin/release/keelwire
+      - name: Package
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          d="keelwire-$VERSION-${{ matrix.name }}"
+          mkdir "$d"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp "target/${{ matrix.target }}/release/keelwire.exe" "$d/Keelwire.exe"
+          else
+            cp "target/${{ matrix.target }}/release/keelwire" "$d/keelwire"
+          fi
+          cp LICENSE NOTICE docs/INSTALL.md "$d/"
+          [ "${{ matrix.cross }}" = "true" ] && cp packaging/keelwire.service "$d/" || true
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a "$d.zip" "$d" >/dev/null && f="$d.zip"
+          else
+            tar czf "$d.tar.gz" "$d" && f="$d.tar.gz"
+          fi
+          gh release upload "$TAG" "$f" --clobber

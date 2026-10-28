@@ -1,0 +1,608 @@
+{
+ "Version": "keelwire-community-1",
+ "Comment": "Supplementary PGN definitions merged into the CANboat database at load. Sources: mbj4668/n2k (MIT) src/maretron-pgns.yaml; Maretron SSC300 user's manual.",
+ "LookupEnumerations": [
+  {
+   "Name": "MARETRON_SLAVE_RESPONSE_COMMAND",
+   "MaxValue": 252,
+   "EnumValues": [
+    {
+     "Name": "Tank Meter Level Configuration",
+     "Value": 49
+    },
+    {
+     "Name": "Deviation Calibration Status",
+     "Value": 80
+    },
+    {
+     "Name": "Variation Source",
+     "Value": 93
+    },
+    {
+     "Name": "Compass Rate of Turn Configuration",
+     "Value": 94
+    },
+    {
+     "Name": "Information",
+     "Value": 252
+    }
+   ]
+  },
+  {
+   "Name": "MARETRON_ROT_SUBCOMMAND",
+   "MaxValue": 514,
+   "EnumValues": [
+    {
+     "Name": "Get Damping Period",
+     "Value": 1
+    },
+    {
+     "Name": "Set Damping Period",
+     "Value": 2
+    },
+    {
+     "Name": "Initiate Zeroing",
+     "Value": 17
+    },
+    {
+     "Name": "Cancel Zeroing",
+     "Value": 18
+    },
+    {
+     "Name": "Get Installation Configuration",
+     "Value": 513
+    },
+    {
+     "Name": "Set Installation Configuration",
+     "Value": 514
+    }
+   ]
+  },
+  {
+   "Name": "MARETRON_VARIATION_SOURCE",
+   "MaxValue": 3,
+   "EnumValues": [
+    {
+     "Name": "Manual",
+     "Value": 0
+    },
+    {
+     "Name": "NMEA 2000",
+     "Value": 1
+    },
+    {
+     "Name": "NMEA 0183",
+     "Value": 2
+    },
+    {
+     "Name": "NMEA 2000 or NMEA 0183",
+     "Value": 3
+    }
+   ]
+  },
+  {
+   "Name": "MARETRON_INSTALLATION_ORIENTATION",
+   "MaxValue": 2,
+   "EnumValues": [
+    {
+     "Name": "Normal",
+     "Value": 1
+    },
+    {
+     "Name": "Upside down",
+     "Value": 2
+    }
+   ]
+  },
+  {
+   "Name": "MARETRON_INSTALLATION_DIRECTION",
+   "MaxValue": 2,
+   "EnumValues": [
+    {
+     "Name": "Normal",
+     "Value": 1
+    },
+    {
+     "Name": "Backward",
+     "Value": 2
+    }
+   ]
+  },
+  {
+   "Name": "MARETRON_PRODUCT_CODE",
+   "MaxValue": 27725,
+   "EnumValues": [
+    {
+     "Name": "TLM100",
+     "Value": 27725
+    }
+   ]
+  }
+ ],
+ "PGNs": [
+  {
+   "PGN": 126720,
+   "Id": "maretronVariationSourceResponse",
+   "Description": "Maretron: Variation Source",
+   "Type": "Fast",
+   "Complete": false,
+   "Explanation": "Layout observed on the wire by the mbj4668/n2k project (MIT); not verified by Keelwire on hardware.",
+   "Fields": [
+    {
+     "Order": 1,
+     "Id": "manufacturerCode",
+     "Name": "Manufacturer Code",
+     "BitLength": 11,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MANUFACTURER_CODE",
+     "Match": 137
+    },
+    {
+     "Order": 2,
+     "Id": "reserved",
+     "Name": "Reserved",
+     "BitLength": 2,
+     "FieldType": "RESERVED"
+    },
+    {
+     "Order": 3,
+     "Id": "industryCode",
+     "Name": "Industry Code",
+     "BitLength": 3,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "INDUSTRY_CODE",
+     "Match": 4
+    },
+    {
+     "Order": 4,
+     "Id": "productCode",
+     "Name": "Product Code",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_PRODUCT_CODE"
+    },
+    {
+     "Order": 5,
+     "Id": "softwareCode",
+     "Name": "Software Code",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 1
+    },
+    {
+     "Order": 6,
+     "Id": "command",
+     "Name": "Command",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_SLAVE_RESPONSE_COMMAND",
+     "Match": 93
+    },
+    {
+     "Id": "source",
+     "Name": "Source",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_VARIATION_SOURCE",
+     "Order": 7
+    },
+    {
+     "Id": "variation",
+     "Name": "Variation",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Signed": true,
+     "Resolution": 0.0001,
+     "Unit": "rad",
+     "Order": 8
+    }
+   ]
+  },
+  {
+   "PGN": 126720,
+   "Id": "maretronRotDampingGetResponse",
+   "Description": "Maretron: Rate of Turn Damping",
+   "Type": "Fast",
+   "Complete": false,
+   "Explanation": "Layout observed on the wire by the mbj4668/n2k project (MIT); not verified by Keelwire on hardware.",
+   "Fields": [
+    {
+     "Order": 1,
+     "Id": "manufacturerCode",
+     "Name": "Manufacturer Code",
+     "BitLength": 11,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MANUFACTURER_CODE",
+     "Match": 137
+    },
+    {
+     "Order": 2,
+     "Id": "reserved",
+     "Name": "Reserved",
+     "BitLength": 2,
+     "FieldType": "RESERVED"
+    },
+    {
+     "Order": 3,
+     "Id": "industryCode",
+     "Name": "Industry Code",
+     "BitLength": 3,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "INDUSTRY_CODE",
+     "Match": 4
+    },
+    {
+     "Order": 4,
+     "Id": "productCode",
+     "Name": "Product Code",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_PRODUCT_CODE"
+    },
+    {
+     "Order": 5,
+     "Id": "softwareCode",
+     "Name": "Software Code",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 1
+    },
+    {
+     "Order": 6,
+     "Id": "command",
+     "Name": "Command",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_SLAVE_RESPONSE_COMMAND",
+     "Match": 94
+    },
+    {
+     "Id": "rotCommand",
+     "Name": "Sub-command",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_ROT_SUBCOMMAND",
+     "Match": 1,
+     "Order": 7
+    },
+    {
+     "Id": "dampingPeriod",
+     "Name": "Damping Period",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 0.001,
+     "Unit": "s",
+     "Order": 8
+    }
+   ]
+  },
+  {
+   "PGN": 126720,
+   "Id": "maretronRotDampingSetResponse",
+   "Description": "Maretron: Rate of Turn Damping (set)",
+   "Type": "Fast",
+   "Complete": false,
+   "Explanation": "Layout observed on the wire by the mbj4668/n2k project (MIT); not verified by Keelwire on hardware.",
+   "Fields": [
+    {
+     "Order": 1,
+     "Id": "manufacturerCode",
+     "Name": "Manufacturer Code",
+     "BitLength": 11,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MANUFACTURER_CODE",
+     "Match": 137
+    },
+    {
+     "Order": 2,
+     "Id": "reserved",
+     "Name": "Reserved",
+     "BitLength": 2,
+     "FieldType": "RESERVED"
+    },
+    {
+     "Order": 3,
+     "Id": "industryCode",
+     "Name": "Industry Code",
+     "BitLength": 3,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "INDUSTRY_CODE",
+     "Match": 4
+    },
+    {
+     "Order": 4,
+     "Id": "productCode",
+     "Name": "Product Code",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_PRODUCT_CODE"
+    },
+    {
+     "Order": 5,
+     "Id": "softwareCode",
+     "Name": "Software Code",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 1
+    },
+    {
+     "Order": 6,
+     "Id": "command",
+     "Name": "Command",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_SLAVE_RESPONSE_COMMAND",
+     "Match": 94
+    },
+    {
+     "Id": "rotCommand",
+     "Name": "Sub-command",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_ROT_SUBCOMMAND",
+     "Match": 2,
+     "Order": 7
+    },
+    {
+     "Id": "dampingPeriod",
+     "Name": "Damping Period",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 0.001,
+     "Unit": "s",
+     "Order": 8
+    }
+   ]
+  },
+  {
+   "PGN": 126720,
+   "Id": "maretronInstallationConfigurationResponse",
+   "Description": "Maretron: Compass Installation",
+   "Type": "Fast",
+   "Complete": false,
+   "Explanation": "Layout observed on the wire by the mbj4668/n2k project (MIT); not verified by Keelwire on hardware.",
+   "Fields": [
+    {
+     "Order": 1,
+     "Id": "manufacturerCode",
+     "Name": "Manufacturer Code",
+     "BitLength": 11,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MANUFACTURER_CODE",
+     "Match": 137
+    },
+    {
+     "Order": 2,
+     "Id": "reserved",
+     "Name": "Reserved",
+     "BitLength": 2,
+     "FieldType": "RESERVED"
+    },
+    {
+     "Order": 3,
+     "Id": "industryCode",
+     "Name": "Industry Code",
+     "BitLength": 3,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "INDUSTRY_CODE",
+     "Match": 4
+    },
+    {
+     "Order": 4,
+     "Id": "productCode",
+     "Name": "Product Code",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_PRODUCT_CODE"
+    },
+    {
+     "Order": 5,
+     "Id": "softwareCode",
+     "Name": "Software Code",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 1
+    },
+    {
+     "Order": 6,
+     "Id": "command",
+     "Name": "Command",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_SLAVE_RESPONSE_COMMAND",
+     "Match": 94
+    },
+    {
+     "Id": "rotCommand",
+     "Name": "Sub-command",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_ROT_SUBCOMMAND",
+     "Match": 513,
+     "Order": 7
+    },
+    {
+     "Id": "orientation",
+     "Name": "Orientation",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_INSTALLATION_ORIENTATION",
+     "Order": 8
+    },
+    {
+     "Id": "direction",
+     "Name": "Direction",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_INSTALLATION_DIRECTION",
+     "Order": 9
+    }
+   ]
+  },
+  {
+   "PGN": 126720,
+   "Id": "maretronTankLevelConfigurationResponse",
+   "Description": "Maretron: Tank Level Configuration",
+   "Type": "Fast",
+   "Complete": false,
+   "Explanation": "Layout observed on the wire by the mbj4668/n2k project (MIT); not verified by Keelwire on hardware. Depth units unknown.",
+   "Fields": [
+    {
+     "Order": 1,
+     "Id": "manufacturerCode",
+     "Name": "Manufacturer Code",
+     "BitLength": 11,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MANUFACTURER_CODE",
+     "Match": 137
+    },
+    {
+     "Order": 2,
+     "Id": "reserved",
+     "Name": "Reserved",
+     "BitLength": 2,
+     "FieldType": "RESERVED"
+    },
+    {
+     "Order": 3,
+     "Id": "industryCode",
+     "Name": "Industry Code",
+     "BitLength": 3,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "INDUSTRY_CODE",
+     "Match": 4
+    },
+    {
+     "Order": 4,
+     "Id": "productCode",
+     "Name": "Product Code",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_PRODUCT_CODE"
+    },
+    {
+     "Order": 5,
+     "Id": "softwareCode",
+     "Name": "Software Code",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 1
+    },
+    {
+     "Order": 6,
+     "Id": "command",
+     "Name": "Command",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_SLAVE_RESPONSE_COMMAND",
+     "Match": 49
+    },
+    {
+     "Id": "reserved7",
+     "Name": "Reserved",
+     "BitLength": 8,
+     "FieldType": "RESERVED",
+     "Order": 7
+    },
+    {
+     "Id": "row",
+     "Name": "Table Row",
+     "BitLength": 8,
+     "FieldType": "NUMBER",
+     "Resolution": 1,
+     "Order": 8
+    },
+    {
+     "Id": "depth",
+     "Name": "Depth",
+     "BitLength": 32,
+     "FieldType": "NUMBER",
+     "Resolution": 1,
+     "Order": 9
+    },
+    {
+     "Id": "percent",
+     "Name": "Level",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 0.004,
+     "Unit": "%",
+     "Order": 10
+    }
+   ]
+  },
+  {
+   "PGN": 126720,
+   "Id": "maretronInformation",
+   "Description": "Maretron: Information",
+   "Type": "Fast",
+   "Complete": false,
+   "Explanation": "Layout observed on the wire by the mbj4668/n2k project (MIT); not verified by Keelwire on hardware.",
+   "Fields": [
+    {
+     "Order": 1,
+     "Id": "manufacturerCode",
+     "Name": "Manufacturer Code",
+     "BitLength": 11,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MANUFACTURER_CODE",
+     "Match": 137
+    },
+    {
+     "Order": 2,
+     "Id": "reserved",
+     "Name": "Reserved",
+     "BitLength": 2,
+     "FieldType": "RESERVED"
+    },
+    {
+     "Order": 3,
+     "Id": "industryCode",
+     "Name": "Industry Code",
+     "BitLength": 3,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "INDUSTRY_CODE",
+     "Match": 4
+    },
+    {
+     "Order": 4,
+     "Id": "productCode",
+     "Name": "Product Code",
+     "BitLength": 16,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_PRODUCT_CODE"
+    },
+    {
+     "Order": 5,
+     "Id": "softwareCode",
+     "Name": "Software Code",
+     "BitLength": 16,
+     "FieldType": "NUMBER",
+     "Resolution": 1
+    },
+    {
+     "Order": 6,
+     "Id": "command",
+     "Name": "Command",
+     "BitLength": 8,
+     "FieldType": "LOOKUP",
+     "LookupEnumeration": "MARETRON_SLAVE_RESPONSE_COMMAND",
+     "Match": 252
+    },
+    {
+     "Id": "reserved7",
+     "Name": "Reserved",
+     "BitLength": 8,
+     "FieldType": "RESERVED",
+     "Order": 7
+    },
+    {
+     "Id": "text",
+     "Name": "Text",
+     "FieldType": "STRING_LZ",
+     "Order": 8
+    }
+   ]
+  }
+ ]
+}

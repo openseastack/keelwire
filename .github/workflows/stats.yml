@@ -1,0 +1,49 @@
+# Daily snapshot of release downloads, stars and (optionally) traffic,
+# kept as CSV files on the `stats` branch. GitHub only shows running
+# download totals and keeps traffic for 14 days; this keeps the history.
+#
+# Traffic (views, clones, referrers) needs a token GitHub Actions' own
+# token can't provide: add a STATS_TOKEN secret (see docs/RELEASING.md).
+name: Stats
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stats
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the stats branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin stats >/dev/null; then
+            git fetch --depth 1 origin stats
+            git worktree add data FETCH_HEAD
+            git -C data checkout -B stats
+          else
+            git worktree add --detach data
+            git -C data checkout --orphan stats
+            git -C data rm -rf --quiet .
+          fi
+      - name: Collect
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STATS_TOKEN: ${{ secrets.STATS_TOKEN }}
+        run: python3 scripts/collect_stats.py data
+      - name: Save
+        working-directory: data
+        run: |
+          git add -A
+          git diff --cached --quiet && { echo "No changes"; exit 0; }
+          git commit -m "Stats $(date -u +%F)"
+          git push origin stats

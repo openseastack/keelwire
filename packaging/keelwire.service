@@ -1,0 +1,31 @@
+# systemd unit for the headless gateway daemon.
+#   sudo useradd -r -s /usr/sbin/nologin -G dialout keelwire
+#   sudo cp keelwire /usr/local/bin/
+#   sudo cp keelwire.service /etc/systemd/system/
+#   sudo systemctl enable --now keelwire
+[Unit]
+Description=Keelwire NMEA 2000 analyzer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=keelwire
+Group=keelwire
+# Bring the CAN interface up first (adjust for your HAT):
+ExecStartPre=+/sbin/ip link set can0 up type can bitrate 250000
+ExecStart=/usr/local/bin/keelwire --headless --interface socketcan:can0 --data-dir /var/lib/keelwire
+Environment=RUST_LOG=info
+# Add --allow-tx to ExecStart to permit changes and switching from the web UI.
+# Uncomment to require a token for the web UI:
+# Environment=KEELWIRE_TOKEN=change-me
+StateDirectory=keelwire
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

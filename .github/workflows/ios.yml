@@ -1,0 +1,70 @@
+# iPhone / iPad app (docs/IOS-SPEC.md §9).
+#
+# Every version tag (and "Run workflow" in the Actions tab) builds the app.
+# With the App Store Connect secrets below it is signed, built for the App
+# Store and uploaded to TestFlight; without them it only builds for the iOS
+# Simulator, as a check that everything compiles.
+#
+# Secrets (Settings › Secrets and variables › Actions):
+#   APPLE_API_ISSUER        Issuer ID   (App Store Connect › Users and Access › Integrations)
+#   APPLE_API_KEY_ID        Key ID      (role Admin or App Manager)
+#   APPLE_API_KEY_P8        contents of AuthKey_<Key ID>.p8
+#   APPLE_DEVELOPMENT_TEAM  Team ID     (developer.apple.com › Account › Membership)
+
+name: iOS
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    env:
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+      APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: ui/package-lock.json }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "aarch64-apple-ios,aarch64-apple-ios-sim" }
+      - uses: Swatinem/rust-cache@v2
+      - run: brew install xcodegen cocoapods
+      - run: npm ci
+        working-directory: ui
+      - run: npm install --no-audit --no-fund
+        working-directory: crates/keelwire-tauri
+      - name: Generate the Xcode project
+        working-directory: crates/keelwire-tauri
+        run: npm run --silent tauri -- ios init --ci
+
+      - name: Build for the Simulator (no signing secrets)
+        if: env.APPLE_API_KEY_P8 == ''
+        working-directory: crates/keelwire-tauri
+        run: npm run --silent tauri -- ios build --target aarch64-sim --debug --ci
+
+      - name: Build for the App Store
+        if: env.APPLE_API_KEY_P8 != ''
+        working-directory: crates/keelwire-tauri
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          KEY=~/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+          printf '%s' "$APPLE_API_KEY_P8" > "$KEY"
+          # Automatic signing with the API key.
+          export APPLE_API_KEY="$APPLE_API_KEY_ID" APPLE_API_KEY_PATH="$KEY"
+          npm run --silent tauri -- ios build --export-method app-store-connect --ci \
+            --config "{\"bundle\":{\"iOS\":{\"bundleVersion\":\"${{ github.run_number }}\"}}}"
+      - name: Upload to TestFlight
+        if: env.APPLE_API_KEY_P8 != ''
+        run: |
+          IPA=$(ls crates/keelwire-tauri/gen/apple/build/arm64/*.ipa | head -1)
+          xcrun altool --upload-app --type ios --file "$IPA" --apiKey "$APPLE_API_KEY_ID" --apiIssuer "$APPLE_API_ISSUER"
+      - uses: actions/upload-artifact@v4
+        if: env.APPLE_API_KEY_P8 != ''
+        with:
+          name: keelwire-ios-ipa
+          path: crates/keelwire-tauri/gen/apple/build/arm64/*.ipa

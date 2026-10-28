@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: ui/package-lock.json }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+      - run: npm ci && npm run build
+        working-directory: ui
+      - run: cargo test --workspace
+      - run: cargo clippy --workspace -- -D warnings
+
+  ios-check:
+    # The engine and the iOS glue must keep compiling for iPhone/iPad.
+    # (The full app build needs Xcode; see .github/workflows/ios.yml.)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-apple-ios }
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --target aarch64-apple-ios -p keelwire-server -p keelwire-ios
+        env: { KEELWIRE_SKIP_UI_BUILD: "1" }
+
+  headless:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-latest, target: aarch64-unknown-linux-gnu, cross: true }   # Raspberry Pi 4/5, CM4
+          - { os: ubuntu-latest, target: armv7-unknown-linux-gnueabihf, cross: true }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.target }}" }
+      - run: npm ci && npm run build
+        working-directory: ui
+      - if: matrix.cross
+        env: { KEELWIRE_SKIP_UI_BUILD: "1" }   # UI already built above; cross containers have no Node
+        run: cargo install cross --locked && cross build --release -p keelwire-server --target ${{ matrix.target }}
+      - if: ${{ !matrix.cross }}
+        run: cargo build --release -p keelwire-server --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keelwire-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/keelwire*
+
+  desktop:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - { os: macos-latest, args: "--target universal-apple-darwin" }
+          - { os: ubuntu-22.04, args: "" }
+          - { os: windows-latest, args: "" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: "${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}" }
+      - if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libudev-dev
+      - run: npm ci
+        working-directory: ui
+      - run: cargo install tauri-cli --version "^2" --locked
+      - run: cargo tauri build ${{ matrix.args }}
+        working-directory: crates/keelwire-tauri
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: target/**/release/bundle/**
