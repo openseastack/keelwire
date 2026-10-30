@@ -446,7 +446,7 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { le
 </script>
 <script>
 /* Visit counting with GoatCounter: no cookies and no personal data. Runs only on the published site. */
-if (location.hostname.endsWith("github.io")) {
+if (location.hostname === "openseastack.org" || location.hostname.endsWith("github.io")) {
   const gc = document.createElement("script");
   gc.async = true;
   gc.src = "https://gc.zgo.at/count.js";

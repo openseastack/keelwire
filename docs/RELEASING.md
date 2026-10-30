@@ -91,7 +91,7 @@ The next run adds `views.csv`, `clones.csv`, `referrers.csv` and `paths.csv`.
 **Product tour visits** are counted with [GoatCounter](https://www.goatcounter.com) (free for open-source
 and non-commercial sites; no cookies or personal data). Create a GoatCounter site with the code `keelwire`;
 if that code is taken, change the address in the last `<script>` of `site/index.html`. Counting only runs
-on `*.github.io`, never on local copies.
+on the published site (openseastack.org or `*.github.io`), never on local copies.
 
 
 ## iPhone and iPad (TestFlight)
